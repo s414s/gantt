@@ -7,10 +7,12 @@ type DataType = {
 };
 
 type GanttData = {
+    id: number;
     task: string;
     start: Date;
     end: Date;
     color: string;
+    dependencies?: number[];
 };
 
 export type ChartGraphData = GanttData[];
@@ -78,6 +80,19 @@ export const BarGraph = function (grossWidth: number, grossHeight: number) {
             .range([0, height])
             .padding(0.1);
 
+        // Create a tooltip element (hidden by default)
+        const tooltip = d3
+            .select('body')
+            .append('div')
+            .attr('class', 'tooltip')
+            .style('position', 'absolute')
+            .style('background', '#fff')
+            .style('padding', '5px')
+            .style('border', '1px solid #ccc')
+            .style('border-radius', '4px')
+            .style('pointer-events', 'none')
+            .style('opacity', 0);
+
         // Create a group for zoomable content (bars and x-axis)
         // This group will be clipped to the chart area.
         const chartGroup = svg.append('g')
@@ -96,14 +111,36 @@ export const BarGraph = function (grossWidth: number, grossHeight: number) {
             .attr('width', d => x(d.end) - x(d.start))
             .attr('height', y.bandwidth())
             .attr('fill', d => d.color)
-            .attr('stroke', 'white');
+            .attr('stroke', 'white')
+            .on('mouseover', (_event, d) => {
+                tooltip
+                    .style('opacity', 1)
+                    .html(`
+                        <strong>${d.task}</strong><br>
+                        Start: ${d.start.toLocaleDateString()}<br>
+                        End: ${d.end.toLocaleDateString()}
+                    `);
+            })
+            .on('mousemove', (event, _d) => {
+                tooltip
+                    .style('left', (event.pageX + 10) + 'px')
+                    .style('top', (event.pageY + 10) + 'px');
+            })
+            .on('mouseout', (_event, _d) => {
+                tooltip.style('opacity', 0);
+            });
 
         // Create the x-axis in its own group (outside of the clipped group)
         const xAxisGroup = svg.append('g')
             .attr('class', 'x-axis')
             .attr('transform', `translate(0, ${height})`)
-            .call(d3.axisBottom(x));
+            .call(d3.axisBottom(x).tickSize(-height));
+        // .call(d3.axisBottom(x));
 
+        // Style the vertical grid lines as light gray dotted lines
+        xAxisGroup.selectAll('line')
+            .attr('stroke', 'lightgray')
+            .attr('stroke-dasharray', '4,2');
 
         // Create the y-axis in its own group so it remains fixed
         svg
@@ -118,7 +155,11 @@ export const BarGraph = function (grossWidth: number, grossHeight: number) {
                 const newXScale = event.transform.rescaleX(x);
 
                 // Update the x-axis in its separate group (so tick labels are not clipped)
-                xAxisGroup.call(d3.axisBottom(newXScale));
+                // xAxisGroup.call(d3.axisBottom(newXScale));
+                xAxisGroup.call(d3.axisBottom(newXScale).tickSize(-height));
+                xAxisGroup.selectAll('line')
+                    .attr('stroke', 'lightgray')
+                    .attr('stroke-dasharray', '4,2');
 
                 // Update the bars in the chartGroup
                 chartGroup.selectAll<SVGRectElement, GanttData>('.gantt-bar')
@@ -177,7 +218,6 @@ export const BarGraph = function (grossWidth: number, grossHeight: number) {
             .attr('height', y.bandwidth())
             .attr('fill', d => d.color);
     };
-
 
     return { setupGraph, updateChart };
 };

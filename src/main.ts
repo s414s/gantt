@@ -5,19 +5,19 @@ import './gantt.css';
 import { setupCounter } from './counter.ts';
 import { BarGraph, ChartGraphData } from './gantt/HorizontalChart.ts';
 
-const data2: ChartGraphData = [
-  { task: 'Task A', start: new Date(2025, 1, 1), end: new Date(2025, 1, 3), color: '#ff6b6b' },
-  { task: 'Task B', start: new Date(2025, 1, 3), end: new Date(2025, 1, 5), color: '#4ecdc4' },
-  { task: 'Task C', start: new Date(2025, 1, 1), end: new Date(2025, 1, 10), color: '#45b7d1' },
-  { task: 'Task D', start: new Date(2025, 2, 1), end: new Date(2025, 2, 4), color: '#ff0' },
-  { task: 'Task E', start: new Date(2025, 1, 11), end: new Date(2025, 1, 21), color: '#ffeead' }
+const data: ChartGraphData = [
+  { id: 1, task: 'Task A', start: new Date(2025, 1, 1), end: new Date(2025, 1, 3), color: '#ff6b6b' },
+  { id: 2, task: 'Task B', start: new Date(2025, 1, 3), end: new Date(2025, 1, 5), color: '#4ecdc4' },
+  { id: 3, task: 'Task C', start: new Date(2025, 1, 1), end: new Date(2025, 1, 10), color: '#45b7d1' },
+  { id: 4, task: 'Task D', start: new Date(2025, 2, 1), end: new Date(2025, 2, 4), color: '#ff0' },
+  { id: 5, task: 'Task E', start: new Date(2025, 1, 11), end: new Date(2025, 1, 21), color: '#ffeead' }
 ];
 
 const divSelector = document.querySelector<HTMLDivElement>('#gantt')!;
 
 const { setupGraph, updateChart } = BarGraph(1500, 400);
 
-setupGraph(divSelector, data2);
+setupGraph(divSelector, data);
 // updateChart(data2);
 
 // ==================================
