@@ -24,6 +24,13 @@ type BarGraphConfig = {
     height?: number;
 };
 
+// const data: BarGraphData = [
+//   { name: 'A', value: 88, color: '#ff6b6b' },
+//   { name: 'B', value: 12, color: '#4ecdc4' },
+//   { name: 'C', value: 58, color: '#45b7d1' },
+//   { name: 'D', value: 39, color: '#ff0' },
+//   { name: 'E', value: 77, color: '#ffeead' }
+// ];
 
 
 

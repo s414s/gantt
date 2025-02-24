@@ -112,6 +112,27 @@ export const BarGraph = function (grossWidth: number, grossHeight: number) {
             .attr('height', y.bandwidth())
             .attr('fill', d => d.color)
             .attr('stroke', 'white');
+
+        // --- Add Zoom Behavior ---
+        // Create a zoom behavior with a scale extent (min and max zoom)
+        const zoom = d3.zoom<SVGGElement, unknown>()
+            .scaleExtent([0.5, 5])
+            .on("zoom", (event) => {
+                // Rescale the x-axis based on the zoom transform
+                const newXScale = event.transform.rescaleX(x);
+                // Update the x-axis
+                // svg.select(".x-axis").call(d3.axisBottom(newXScale));
+                (svg.select(".x-axis") as d3.Selection<SVGGElement, unknown, null, undefined>)
+                    .call(d3.axisBottom(newXScale));
+
+                // Update positions and widths of the Gantt bars
+                svg.selectAll<SVGRectElement, GanttData>(".gantt-bar")
+                    .attr("x", d => newXScale(d.start))
+                    .attr("width", d => newXScale(d.end) - newXScale(d.start));
+            });
+
+        // Apply the zoom behavior to the SVG container
+        svg.call(zoom);
     };
 
     const updateChart = (newData: ChartGraphData) => {
