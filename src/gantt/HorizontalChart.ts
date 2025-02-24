@@ -15,6 +15,11 @@ type GanttData = {
     dependencies?: number[];
 };
 
+type DependencyLine = {
+    sourceTask: GanttData;
+    targetTask: GanttData;
+};
+
 export type ChartGraphData = GanttData[];
 
 type GanttChartConfig = {
@@ -130,6 +135,47 @@ export const BarGraph = function (grossWidth: number, grossHeight: number) {
                 tooltip.style('opacity', 0);
             });
 
+        // Create a group for dependency lines (placed behind the bars)
+        const dependencyGroup = chartGroup.append('g')
+            .attr('class', 'dependency-lines');
+
+        // Prepare dependency data: for each task that has dependencies,
+        // find the corresponding source task in chartData.
+        const dependencyData: DependencyLine[] = [];
+
+        chartData.forEach(task => {
+            if (task.dependencies) {
+                task.dependencies.forEach(depTaskId => {
+                    const sourceTask = chartData.find(t => t.id === depTaskId);
+                    if (sourceTask) {
+                        dependencyData.push({
+                            sourceTask,
+                            targetTask: task
+                        });
+                    }
+                });
+            }
+        });
+
+        // Draw dependency lines
+        dependencyGroup.selectAll('.dependency-line')
+            .data(dependencyData)
+            .enter()
+            .append('path')
+            .attr('class', 'dependency-line')
+            .attr('fill', 'none')
+            .attr('stroke', 'black')
+            .attr('stroke-width', 1)
+            .attr('marker-end', 'url(#arrow)')
+            .attr('d', d => {
+                const sourceX = x(d.sourceTask.end);
+                const sourceY = (y(d.sourceTask.task) as number) + y.bandwidth() / 2;
+                const targetX = x(d.targetTask.start);
+                const targetY = (y(d.targetTask.task) as number) + y.bandwidth() / 2;
+                const midX = sourceX + (targetX - sourceX) / 2;
+                return `M ${sourceX} ${sourceY} L ${midX} ${sourceY} L ${midX} ${targetY} L ${targetX} ${targetY}`;
+            });
+
         // Create the x-axis in its own group (outside of the clipped group)
         const xAxisGroup = svg.append('g')
             .attr('class', 'x-axis')
@@ -165,6 +211,21 @@ export const BarGraph = function (grossWidth: number, grossHeight: number) {
                 chartGroup.selectAll<SVGRectElement, GanttData>('.gantt-bar')
                     .attr('x', d => newXScale(d.start))
                     .attr('width', d => newXScale(d.end) - newXScale(d.start));
+
+                // Update dependency lines (only the x coordinates change)
+                // dependencyGroup.selectAll<SVGLineElement, DependencyLine>('.dependency-line')
+                //     .attr('x1', d => newXScale(d.sourceTask.end))
+                //     .attr('x2', d => newXScale(d.targetTask.start));
+
+                dependencyGroup.selectAll<SVGPathElement, DependencyLine>('.dependency-line')
+                    .attr('d', d => {
+                        const sourceX = newXScale(d.sourceTask.end);
+                        const sourceY = (y(d.sourceTask.task) as number) + y.bandwidth() / 2;
+                        const targetX = newXScale(d.targetTask.start);
+                        const targetY = (y(d.targetTask.task) as number) + y.bandwidth() / 2;
+                        const midX = sourceX + (targetX - sourceX) / 2;
+                        return `M ${sourceX} ${sourceY} L ${midX} ${sourceY} L ${midX} ${targetY} L ${targetX} ${targetY}`;
+                    });
             });
 
         // Apply the zoom behavior to the SVG container

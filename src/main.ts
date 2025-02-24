@@ -6,7 +6,7 @@ import { setupCounter } from './counter.ts';
 import { BarGraph, ChartGraphData } from './gantt/HorizontalChart.ts';
 
 const data: ChartGraphData = [
-  { id: 1, task: 'Task A', start: new Date(2025, 1, 1), end: new Date(2025, 1, 3), color: '#ff6b6b' },
+  { id: 1, task: 'Task A', start: new Date(2025, 1, 1), end: new Date(2025, 1, 3), color: '#ff6b6b', dependencies: [2, 3] },
   { id: 2, task: 'Task B', start: new Date(2025, 1, 3), end: new Date(2025, 1, 5), color: '#4ecdc4' },
   { id: 3, task: 'Task C', start: new Date(2025, 1, 1), end: new Date(2025, 1, 10), color: '#45b7d1' },
   { id: 4, task: 'Task D', start: new Date(2025, 2, 1), end: new Date(2025, 2, 4), color: '#ff0' },
