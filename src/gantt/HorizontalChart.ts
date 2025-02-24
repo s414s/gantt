@@ -28,8 +28,6 @@ export const BarGraph = function (grossWidth: number, grossHeight: number) {
     let height = grossHeight - margin.top - margin.bottom;
 
     let svg: d3.Selection<SVGGElement, unknown, null, undefined>;
-    // let x: d3.ScaleBand<string>;
-    // let y: d3.ScaleLinear<number, number>;
     let x: d3.ScaleTime<number, number>;
     let y: d3.ScaleBand<string>;
 
@@ -47,8 +45,7 @@ export const BarGraph = function (grossWidth: number, grossHeight: number) {
         // Clear previous contents
         d3.select(selector).selectAll('*').remove();
 
-        // Create SVG container
-        // root svg
+        // Create SVG container, root svg
         svg = d3
             .select(selector)
             .append('svg')
@@ -57,7 +54,16 @@ export const BarGraph = function (grossWidth: number, grossHeight: number) {
             .append('g')
             .attr('transform', `translate(${margin.left},${margin.top})`);
 
-        // Determine the time domain for the x-axis
+        // Define a clip path for the zoomable chart area (for the bars only)
+        svg
+            .append('defs')
+            .append('clipPath')
+            .attr('id', 'chart-clip')
+            .append('rect')
+            .attr('width', width)
+            .attr('height', height);
+
+        // Compute scales first
         const minStart = d3.min(chartData, d => d.start) as Date;
         const maxEnd = d3.max(chartData, d => d.end) as Date;
 
@@ -66,42 +72,21 @@ export const BarGraph = function (grossWidth: number, grossHeight: number) {
             .domain([minStart, maxEnd])
             .range([0, width]);
 
-        // x axis
-        // x = d3
-        //     .scaleBand()
-        //     .range([0, width])
-        //     .padding(0.1)
-        //     .domain(graphData.map((d) => d.name));
-
         // y axis: tasks
         y = d3.scaleBand()
             .domain(chartData.map(d => d.task))
             .range([0, height])
             .padding(0.1);
 
-        // y axis
-        // y = d3
-        //     .scaleLinear()
-        //     .range([height, 0])
-        //     .domain([0, d3.max(graphData, (d) => d.value + 10) || 0]);
+        // Create a group for zoomable content (bars and x-axis)
+        // This group will be clipped to the chart area.
+        const chartGroup = svg.append('g')
+            .attr('class', 'chart-group')
+            .attr('clip-path', 'url(#chart-clip)');
 
-        // Draw x-axis at the bottom
-        svg
-            .append('g')
-            .attr('class', 'x-axis')
-            .attr('transform', `translate(0,${height})`)
-            .call(d3.axisBottom(x));
-        // .style('stroke-width', 2);
-
-        // Draw y-axis on the left
-        svg
-            .append('g')
-            .attr('class', 'y-axis')
-            .call(d3.axisLeft(y));
-        // .style('stroke-width', 2);
-
-        // Draw Gantt bars for each task
-        svg.selectAll('.gantt-bar')
+        // Draw the bars in the zoomable group using the defined scales
+        chartGroup
+            .selectAll('.gantt-bar')
             .data(chartData)
             .enter()
             .append('rect')
@@ -113,22 +98,32 @@ export const BarGraph = function (grossWidth: number, grossHeight: number) {
             .attr('fill', d => d.color)
             .attr('stroke', 'white');
 
-        // --- Add Zoom Behavior ---
-        // Create a zoom behavior with a scale extent (min and max zoom)
+        // Create the x-axis in its own group (outside of the clipped group)
+        const xAxisGroup = svg.append('g')
+            .attr('class', 'x-axis')
+            .attr('transform', `translate(0, ${height})`)
+            .call(d3.axisBottom(x));
+
+
+        // Create the y-axis in its own group so it remains fixed
+        svg
+            .append('g')
+            .attr('class', 'y-axis')
+            .call(d3.axisLeft(y));
+
         const zoom = d3.zoom<SVGGElement, unknown>()
             .scaleExtent([0.5, 5])
             .on("zoom", (event) => {
-                // Rescale the x-axis based on the zoom transform
+                // Get the transformed x scale
                 const newXScale = event.transform.rescaleX(x);
-                // Update the x-axis
-                // svg.select(".x-axis").call(d3.axisBottom(newXScale));
-                (svg.select(".x-axis") as d3.Selection<SVGGElement, unknown, null, undefined>)
-                    .call(d3.axisBottom(newXScale));
 
-                // Update positions and widths of the Gantt bars
-                svg.selectAll<SVGRectElement, GanttData>(".gantt-bar")
-                    .attr("x", d => newXScale(d.start))
-                    .attr("width", d => newXScale(d.end) - newXScale(d.start));
+                // Update the x-axis in its separate group (so tick labels are not clipped)
+                xAxisGroup.call(d3.axisBottom(newXScale));
+
+                // Update the bars in the chartGroup
+                chartGroup.selectAll<SVGRectElement, GanttData>('.gantt-bar')
+                    .attr('x', d => newXScale(d.start))
+                    .attr('width', d => newXScale(d.end) - newXScale(d.start));
             });
 
         // Apply the zoom behavior to the SVG container
